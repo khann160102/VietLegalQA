@@ -21,10 +21,18 @@ PARSER = stanza.Pipeline(
     verbose=False,
 )
 NER = stanza.Pipeline(
-    lang="vi", processors="tokenize, ner", use_gpu=True, device=0, verbose=False
+    lang="vi",
+    processors="tokenize, ner",
+    use_gpu=True,
+    device=0,
+    verbose=False,
 )
 POS = stanza.Pipeline(
-    lang="vi", processors="tokenize, pos, lemma", use_gpu=True, device=0, verbose=False
+    lang="vi",
+    processors="tokenize, pos, lemma",
+    use_gpu=True,
+    device=0,
+    verbose=False,
 )
 
 
@@ -75,8 +83,8 @@ def extract_s_clause(tree):
 
 
 def get_answer_clause(sentence, parser):
-    parsing_tree = parser(sentence).sentences[0].constituency
-    sbar = extract_s_clause(parsing_tree)[:-1]
+    parsing_tree = parser(sentence)
+    sbar = extract_s_clause(parsing_tree.sentences[0].constituency)[:-1]
     result = []
 
     for node in sbar:
@@ -225,7 +233,7 @@ def extract_answer_span(input_data, span_type):
                             {
                                 "answer_start": answer_start,
                                 "text": answer,
-                                "type": "",
+                                "type": span_type,
                                 "sent_id": sent_id,
                             }
                         ],
@@ -292,8 +300,9 @@ def extract_answer_NE(input_data):
                         question = sent[: ent.start_char] + sent[
                             ent.start_char :
                         ].replace(answer, ent.type, 1)
-                    if not question:
-                        continue
+
+                if not question:
+                    continue
 
                 answer_start = get_answer_start(answer, question, item["document"], POS)
                 if answer_start == -1:
@@ -337,7 +346,7 @@ def extract_answer(args, input_data: list, span_type: str):
         Used to specify the type of answer span you want to extract. It could be `NP`, `VP`, `AP`, `S` or any other type of span that was defined in the `ArgumentParser`.
 
     """
-    print(f"Span_type: {span_type}")
+    print(f"Span type: {span_type}")
     if span_type == "NE":
         cloze_data = extract_answer_NE(input_data)
     else:
