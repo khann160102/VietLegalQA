@@ -1,5 +1,4 @@
 import argparse, json, logging, os
-from math import log
 import stanza
 
 from stanza.models.common.doc import Document
