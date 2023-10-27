@@ -1,19 +1,27 @@
-LOG_FILE = "answer_extraction.log"
+LOG_DIR = "logs"
+LOG_FILE = "extraction.log"
 LOG_FORMAT = "%(asctime)s - %(levelname)s - %(message)s"
 DATE_FORMAT = "%d/%m/%Y %H:%M:%S"
 
-DATA_DIR = "data"
+INPUT_DIR = "data"
 INPUT_FILE = "tvpl"
+
+OUTPUT_DIR = "data"
+OUTPUT_FILE = "tvpl"
+
+STOPWORDS_DIR = "data"
 STOPWORDS_FILE = "vietnamese-stopwords.txt"
 
-SPAN_TYPES = ["NE", "NP", "AP", "VP", "S"]
-ENTITY_TYPES = [
-    "PLACEHOLDER",
-    "PERSON",
-    "ORGANIZATION",
-    "MISCELLANEOUS",
-    "LOCATION",
-    "DATE",
-    "MONEY",
-    "PERCENT",
-]
+SPAN_TYPES = list(["NE", "NP", "AP", "VP", "S"])
+ENTITY_TYPES = list(
+    [
+        "PLACEHOLDER",
+        "PERSON",
+        "ORGANIZATION",
+        "MISCELLANEOUS",
+        "LOCATION",
+        "DATE",
+        "MONEY",
+        "PERCENT",
+    ]
+)
