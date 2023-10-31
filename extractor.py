@@ -63,6 +63,7 @@ class AnswerExtractor:
                 use_gpu=self.args.use_gpu,
                 device=self.args.device,
                 verbose=False,
+                allow_unknown_language=True,
             )
         except Exception as e:
             logging.error(e)
@@ -75,6 +76,7 @@ class AnswerExtractor:
                 use_gpu=self.args.use_gpu,
                 device=self.args.device,
                 verbose=False,
+                allow_unknown_language=True,
             )
         except Exception as e:
             logging.error(e)
