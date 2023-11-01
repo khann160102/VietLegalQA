@@ -12,14 +12,11 @@ if not os.path.exists(os.path.join(utils.LOG_DIR)):
     os.makedirs(os.path.join(utils.LOG_DIR))
 
 logging.basicConfig(
+    filename=os.path.join(utils.LOG_DIR, utils.LOG_FILE),
     format=utils.LOG_FORMAT,
     datefmt=utils.DATE_FORMAT,
     level=logging.INFO,
     encoding="utf-8",
-    handlers=[
-        logging.FileHandler(os.path.join(utils.LOG_DIR, utils.LOG_FILE)),
-        logging.StreamHandler(),
-    ],
 )
 
 
@@ -346,7 +343,7 @@ class AnswerExtractor:
         cloze = []
         count = 0
 
-        for item in tqdm(self.data, desc="Answer Extraction"):
+        for item in tqdm(self.data, desc="Answers Extraction"):
             summaries = []
             qas = []
 
@@ -375,7 +372,9 @@ class AnswerExtractor:
                     question = None
                     for clause in clauses:
                         if len(answer) != 0 and clause.find(answer) != -1:
-                            question = clause.replace(answer, "PLACEHOLDER", 1)
+                            question = clause.replace(
+                                answer, utils.POS_REPLACE[span_type], 1
+                            )
                             break
                     if not question:
                         continue
@@ -447,7 +446,7 @@ class AnswerExtractor:
                     question = None
                     for clause in clauses:
                         if clause.find(answer.text) != -1:
-                            question = clause.replace(answer.text, answer.text, 1)
+                            question = clause.replace(answer.text, answer.type, 1)
                             break
 
                     if not question:
@@ -509,7 +508,7 @@ class AnswerExtractor:
         try:
             filename = os.path.join(
                 self.args.output_dir,
-                f"{self.args.input_file}_extract_{span_type}.json",
+                f"{self.args.output_file}_extract_{span_type}.json",
             )
             json.dump(
                 data,
