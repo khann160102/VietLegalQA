@@ -5,6 +5,7 @@ from stanza.models.common.doc import Document
 from stanza.models.constituency.parse_tree import Tree
 from torch.cuda import is_available, device_count, get_device_name
 from tqdm import tqdm
+from underthesea import word_tokenize
 
 import utils
 
@@ -284,7 +285,7 @@ class AnswerExtractor:
         tuple[str, stanza.models.common.doc.Document]
             A tuple containing two elements. The first element is a string called "doc" which is the input document itself. The second element is the result of processing the input document using the Stanza NLP parser.
         """
-        nlp = self.PARSER(doc)
+        nlp = self.PARSER(" ".join(word_tokenize(doc)))
         doc = ""
         for sent in nlp.sentences:
             doc += " ".join(sent.constituency.leaf_labels()) + " "
