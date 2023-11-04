@@ -118,7 +118,8 @@ class AnswerExtractor:
             A integer value. Returns the starting index of the answer within the context.
         """
         q_tokens = []
-        for word in self.POS(question).sentences[0].words:
+        question = self.POS(question).sentences[0].words
+        for word in question:
             if not self.is_stop(word):
                 q_tokens.append(word.lemma)
 
@@ -126,7 +127,7 @@ class AnswerExtractor:
         for ctx in context:
             if ctx.find(answer) != -1:
                 score = 0
-                for words in self.POS(ctx).sentences[0].words:
+                for words in question:
                     if not self.is_stop(words) and words.lemma in q_tokens:
                         score += 1
                 answer_rank.append({"score": score, "context": ctx})
