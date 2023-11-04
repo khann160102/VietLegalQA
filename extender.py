@@ -3,14 +3,7 @@ import os
 from tqdm import tqdm
 import stanza
 import logging
-from utils import (
-    INPUT_FILE,
-    LOG_FORMAT,
-    DATE_FORMAT,
-    ENTITY_TYPES,
-    SPAN_TYPES,
-    DATA_DIR,
-)
+import utils
 
 logging.basicConfig(level=logging.INFO, format=LOG_FORMAT, datefmt=DATE_FORMAT)
 

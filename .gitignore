@@ -2,10 +2,14 @@
 # Edit at https://www.toptal.com/developers/gitignore?templates=windows,linux,macos,visualstudio,visualstudiocode,python,jupyternotebooks,venv,git,virtualenv,intellij,scala
 
 ### Custom Rules Directories###
+notebooks
 kaggle
 logs
+test
+src
 .json
 .txt
+draft_*
 
 ### Git ###
 # Created by git for backups. To disable backups in Git:

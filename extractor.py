@@ -12,16 +12,19 @@ if not os.path.exists(os.path.join(utils.LOG_DIR)):
     os.makedirs(os.path.join(utils.LOG_DIR))
 
 logging.basicConfig(
-    filename=os.path.join(utils.LOG_DIR, utils.LOG_FILE),
     format=utils.LOG_FORMAT,
     datefmt=utils.DATE_FORMAT,
     level=logging.INFO,
     encoding="utf-8",
+    handlers=[
+        logging.FileHandler(filename=os.path.join(utils.LOG_DIR, utils.LOG_FILE)),
+        logging.StreamHandler(),
+    ],
 )
 
 
 class AnswerExtractor:
-    def __init__(self, args) -> None:
+    def __init__(self, args: argparse.Namespace) -> None:
         """Constructor of the `AnswerExtractor` class. Initializes main components, loads data and NLP models.
 
         Parameters
@@ -30,6 +33,7 @@ class AnswerExtractor:
             Contains arguments from ArgumentParser in the `main()` function.
         """
         self.args = args
+        self.len = 0
 
         try:
             with open(
@@ -78,6 +82,9 @@ class AnswerExtractor:
         except Exception as e:
             logging.error(e)
         logging.info("POS Tagger loaded!")
+
+    def __len__(self) -> int:
+        return self.len
 
     def is_stop(self, word: str) -> bool:
         """Checks if a given word is a stop word.
@@ -241,7 +248,7 @@ class AnswerExtractor:
 
         return spans
 
-    def extract_pos_answers(self, nlp: Document, pos_tag: str) -> list[str]:
+    def extract_pos_keys(self, nlp: Document, pos_tag: str) -> list[str]:
         """Takes a NLP document and a part-of-speech tag as input, and returns a list of spans that match the given part-of-speech tag.
 
         Parameters
@@ -328,93 +335,7 @@ class AnswerExtractor:
             ],
         }
 
-    def extract_answer_pos(self, span_type: str) -> list:
-        """Extracts answers from a given dataset by iterating through the `data, extracting summaries and questions, and finding the answer positions based on the specified span type.
-
-        Parameters
-        ----------
-        span_type : str
-            A string that specifies the type of answer span to extract. Represents a part-of-speech tag, must be within the POS tags of Stanza library, which are [`NP`, `VP`, `AP`, `S`]
-
-        Returns
-        -------
-            A list of dictionaries, where each dictionary represents a cloze-style question and answer.
-        """
-        cloze = []
-        count = 0
-
-        for item in tqdm(self.data, desc="Answers Extraction"):
-            summaries = []
-            qas = []
-
-            for idx, summary in enumerate(item["summary"]):
-                summary, summary_doc = self.get_summary(summary)
-                summaries.append(summary)
-
-                try:
-                    spans = self.extract_pos_answers(summary_doc, span_type)
-                    if len(spans) == 0:
-                        continue
-                except Exception as e:
-                    logging.error(e)
-
-                try:
-                    clauses = self.extract_clauses(summary_doc)
-                    if len(clauses) == 0:
-                        continue
-                except Exception as e:
-                    logging.error(e)
-
-                for answer in spans:
-                    if len(answer) == 0:
-                        continue
-
-                    question = None
-                    for clause in clauses:
-                        if len(answer) != 0 and clause.find(answer) != -1:
-                            question = clause.replace(
-                                answer, utils.POS_REPLACE[span_type], 1
-                            )
-                            break
-                    if not question:
-                        continue
-
-                    try:
-                        answer_start = self.get_answer_start(
-                            answer, question, item["document"]
-                        )
-                    except Exception as e:
-                        logging.error(e)
-
-                    if answer_start == -1:
-                        continue
-
-                    qas.append(
-                        self.to_qa(
-                            id=f'{item["url"]}_{count}',
-                            is_impossible=False,
-                            question=question,
-                            answer=answer,
-                            answer_type=span_type,
-                            answer_start=answer_start,
-                            answer_id=idx,
-                        )
-                    )
-                    count += 1
-
-            cloze.append(
-                {
-                    "title": item["title"],
-                    "summary": summaries,
-                    "context": " ".join(item["document"]),
-                    "QA": qas,
-                }
-            )
-
-        logging.info(f"Answers extracted: {count}")
-        return cloze
-
-    def extract_answer_ne(self) -> list:
+    def extract_answers(self) -> list[dict]:
         """Extracts answers from a given dataset by analyzing summaries and identifying relevant clauses and named entities.
 
         Returns
@@ -433,54 +354,105 @@ class AnswerExtractor:
                 summaries.append(summary)
 
                 try:
+                    keys = {}
+                    keys["NE"] = summary_doc.ents
+                    for pos_tag in utils.POS_TAGS:
+                        keys[pos_tag] = self.extract_pos_keys(summary_doc, pos_tag)
+                    if sum(len(key) for key in keys) == 0:
+                        continue
+                except Exception as e:
+                    logging.error(e)
+
+                try:
                     clauses = self.extract_clauses(summary_doc)
                     if len(clauses) == 0:
                         continue
                 except Exception as e:
                     logging.error(e)
 
-                for answer in summary_doc.ents:
-                    if len(answer.text) == 0:
-                        continue
+                for tag, answers in keys.items():
+                    if tag == "NE":
+                        for answer in summary_doc.ents:
+                            if len(answer.text) == 0:
+                                continue
 
-                    question = None
-                    for clause in clauses:
-                        if clause.find(answer.text) != -1:
-                            question = clause.replace(answer.text, answer.type, 1)
-                            break
+                            question = None
+                            for clause in clauses:
+                                if clause.find(answer.text) != -1:
+                                    question = clause.replace(
+                                        answer.text, answer.type, 1
+                                    )
+                                    break
 
-                    if not question:
-                        for sent in summary_doc.sentences:
-                            if answer.end_char <= sent.tokens[-1].end_char:
-                                question = " ".join(
-                                    sent.constituency.leaf_labels()
-                                ).replace(
-                                    answer.text,
-                                    answer.type,
-                                    1,
+                            if not question:
+                                for sent in summary_doc.sentences:
+                                    if answer.end_char <= sent.tokens[-1].end_char:
+                                        question = " ".join(
+                                            sent.constituency.leaf_labels()
+                                        ).replace(
+                                            answer.text,
+                                            answer.type,
+                                            1,
+                                        )
+                                        break
+                            if not question:
+                                continue
+
+                            answer_start = self.get_answer_start(
+                                answer.text, question, item["document"]
+                            )
+                            if answer_start == -1:
+                                continue
+
+                            qas.append(
+                                self.to_qa(
+                                    id=f'{item["url"]}_{count}',
+                                    is_impossible=False,
+                                    question=question,
+                                    answer=answer.text,
+                                    answer_type=answer.type,
+                                    answer_start=answer_start,
+                                    answer_id=idx,
                                 )
-                                break
-                    if not question:
-                        continue
+                            )
+                            count += 1
+                    else:
+                        for answer in answers:
+                            if len(answer) == 0:
+                                continue
 
-                    answer_start = self.get_answer_start(
-                        answer.text, question, item["document"]
-                    )
-                    if answer_start == -1:
-                        continue
+                            question = None
+                            for clause in clauses:
+                                if len(answer) != 0 and clause.find(answer) != -1:
+                                    question = clause.replace(
+                                        answer, utils.POS_REPLACE[tag], 1
+                                    )
+                                    break
+                            if not question:
+                                continue
 
-                    qas.append(
-                        self.to_qa(
-                            id=f'{item["url"]}_{count}',
-                            is_impossible=False,
-                            question=question,
-                            answer=answer.text,
-                            answer_type=answer.type,
-                            answer_start=answer_start,
-                            answer_id=idx,
-                        )
-                    )
-                    count += 1
+                            try:
+                                answer_start = self.get_answer_start(
+                                    answer, question, item["document"]
+                                )
+                            except Exception as e:
+                                logging.error(e)
+
+                            if answer_start == -1:
+                                continue
+
+                            qas.append(
+                                self.to_qa(
+                                    id=f'{item["url"]}_{count}',
+                                    is_impossible=False,
+                                    question=question,
+                                    answer=answer,
+                                    answer_type=tag,
+                                    answer_start=answer_start,
+                                    answer_id=idx,
+                                )
+                            )
+                            count += 1
 
             cloze.append(
                 {
@@ -494,7 +466,7 @@ class AnswerExtractor:
         logging.info(f"Answers extracted: {count}")
         return cloze
 
-    def to_json(self, data: list[tuple], span_type: str) -> None:
+    def to_json(self, data: list[tuple]) -> None:
         """Saves the data as a JSON file.
 
         Parameters
@@ -508,7 +480,7 @@ class AnswerExtractor:
         try:
             filename = os.path.join(
                 self.args.output_dir,
-                f"{self.args.output_file}_extract_{span_type}.json",
+                f"{self.args.output_file}_extract.json",
             )
             json.dump(
                 data,
@@ -525,39 +497,12 @@ class AnswerExtractor:
         except Exception as e:
             logging.error(e)
 
-    def extract_answer(self, span_type: str) -> None:
-        """Extracts answers based on the given span type.
-
-        Parameters
-        ----------
-        span_type : str
-            The `span_type` parameter is a string that specifies the type of span to extract. It can be either `NE` or within the POS tag of Stanza library [`NP`, `VP`, `AP`, `S`].
-
-        """
+    def build(self) -> None:
+        """Construct the dataset for extractive QA."""
         try:
-            logging.info(f"Extracting: {span_type}")
-            cloze = (
-                self.extract_answer_ne()
-                if span_type == "NE"
-                else self.extract_answer_pos(span_type=span_type)
-            )
-
-            self.to_json(data=cloze, span_type=span_type)
-
-        except Exception as e:
-            logging.error(e)
-
-    def extract(self) -> None:
-        """The function extracts answer based on the specified span type or all span types if "ALL" is specified."""
-        try:
-            if self.args.span_type.upper() == "ALL":
-                logging.info("Extracting all span types...")
-                for type in utils.SPAN_TYPES:
-                    self.extract_answer(span_type=type)
-            elif self.span_type in utils.SPAN_TYPES:
-                logging.info(f"Extracting {self.span_type} span types...")
-                self.extract_answer(span_type=self.args.span_type)
-
+            logging.info("Extracting answers...")
+            cloze_data = self.extract_answers()
+            self.to_json(data=cloze_data)
         except Exception as e:
             logging.error(e)
 
@@ -580,10 +525,6 @@ def check_args(args) -> tuple[bool, str]:
     if not os.path.exists(os.path.join(args.stopwords_dir, args.stopwords_file)):
         return (False, "Stop words file does not exist!")
 
-    if isinstance(args.span_type, str):
-        if args.span_type != "ALL" and not args.span_type in utils.SPAN_TYPES:
-            return (False, f"{args.span_type} span type is not supported!")
-
     msg = []
     if args.use_gpu is True:
         if not is_available:
@@ -605,7 +546,7 @@ def main(args):
         logging.info("Extraction start! Setting up...")
         extractor = AnswerExtractor(args=args)
         logging.info("Setup done! Extracting answers...")
-        extractor.extract()
+        extractor.build()
         logging.info("Extraction done!")
     except Exception as e:
         logging.error(e)
@@ -619,7 +560,6 @@ if __name__ == "__main__":
     parser.add_argument("--output_file", default=utils.OUTPUT_FILE, type=str)
     parser.add_argument("--stopwords_dir", default=utils.STOPWORDS_DIR, type=str)
     parser.add_argument("--stopwords_file", default=utils.STOPWORDS_FILE, type=str)
-    parser.add_argument("--span_type", default="ALL", type=str)
     parser.add_argument("--lang", default="vi", type=str)
     parser.add_argument("--use_gpu", default=True, type=bool)
     parser.add_argument("--device", default=0, type=int)

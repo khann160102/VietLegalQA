@@ -12,9 +12,23 @@ OUTPUT_FILE = "tvpl"
 STOPWORDS_DIR = "data"
 STOPWORDS_FILE = "vietnamese-stopwords.txt"
 
-SPAN_TYPES = list(["NE", "NP", "AP", "VP", "S"])
+POS_TAGS = list(
+    [
+        "NUM",
+        "NP",
+        "AP",
+        "VP",
+        "S",
+    ]
+)
 POS_REPLACE = dict(
-    {"NP": "NOUNPHRASE", "AP": "ADVPHRASE", "VP": "VERBPHARSE", "S": "CLAUSE"}
+    {
+        "NUM": "NUMBER",
+        "NP": "NOUNPHRASE",
+        "AP": "ADVPHRASE",
+        "VP": "VERBPHARSE",
+        "S": "CLAUSE",
+    }
 )
 
 ENTITY_TYPES = list(
