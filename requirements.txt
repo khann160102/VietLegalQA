@@ -1,2 +1,3 @@
 stanza
-tqdm
+transformers
+datasets

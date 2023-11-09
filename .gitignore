@@ -2,13 +2,17 @@
 # Edit at https://www.toptal.com/developers/gitignore?templates=windows,linux,macos,visualstudio,visualstudiocode,python,jupyternotebooks,venv,git,virtualenv,intellij,scala
 
 ### Custom Rules Directories###
-notebooks
 kaggle
 logs
 test
-src
-.json
-.txt
+# .json
+# .txt
+law.json
+question.json
+data/tvpl_extract.json
+*.tsv
+*.rar
+zalo
 draft_*
 
 ### Git ###
