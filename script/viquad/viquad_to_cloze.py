@@ -114,15 +114,11 @@ class Processor:
     def __call__(self) -> Any:
         print("Start process answer type")
         self.data = self.data.map(
-            lambda batch: {"type": self.get_type_batch(batch["answer"])},
-            batched=True,
-            batch_size=int(len(self.data) / 10),
+            lambda entry: {"type": self.get_type(entry["answer"])}
         )
         print("Start process cloze answer")
         self.data = self.data.map(
-            lambda batch: {"cloze_question": self.get_cloze_batch(batch)},
-            batched=True,
-            batch_size=int(len(self.data) / 10),
+            lambda entry: {"cloze_question": self.get_cloze(entry)}
         )
 
     def push_to_hub(self, name, token):
