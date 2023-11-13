@@ -125,8 +125,8 @@ class Processor:
             batch_size=int(len(self.data) / 10),
         )
 
-    def push_to_hub(self, name):
-        self.data.push_to_hub(name)
+    def push_to_hub(self, name, token):
+        self.data.push_to_hub(name, token=token)
 
 
 def check_args(args) -> tuple[bool, str]:
@@ -146,12 +146,13 @@ def main(args):
         args, name=NAME, splits=SPLITS, renames=RENAMES, remove=REMOVES
     )
     prossesor()
-    prossesor.push_to_hub(args.push_to_hub)
+    prossesor.push_to_hub(args.push_to_hub, args.token)
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--push_to_hub", type=str)
+    parser.add_argument("--token", type=str)
     parser.add_argument("--threshold", default=THRESHOLD, type=float)
     parser.add_argument("--lang", default="vi", type=str)
     parser.add_argument("--use_gpu", default=True, type=bool)
