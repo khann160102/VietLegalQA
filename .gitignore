@@ -5,15 +5,12 @@
 kaggle
 logs
 test
-# .json
-# .txt
 law.json
 question.json
 data/tvpl_extract.json
 *.tsv
 *.rar
 zalo
-draft_*
 
 ### Git ###
 # Created by git for backups. To disable backups in Git:
