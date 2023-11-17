@@ -1,4 +1,5 @@
 import json, pickle
+from datasets import Dataset
 from typing import Dict, Iterator, List, Optional, Union
 
 FIELD = list(["id"])
@@ -314,6 +315,12 @@ class Dataset:
         except Exception as e:
             raise e
 
+    def to_dataset(self) -> Dataset:
+        try:
+            return Dataset.from_list(self.data.to_list())
+        except Exception as e:
+            raise e
+
     def to_json(
         self, path: str, indent: Optional[int] = 4, ensure_ascii: Optional[bool] = False
     ) -> None:
@@ -339,5 +346,11 @@ class Dataset:
                 mode="wb",
             ) as file:
                 pickle.dump(obj=self, file=file, protocol=pickle.HIGHEST_PROTOCOL)
+        except Exception as e:
+            raise e
+
+    def push_to_hub(self, path: str, token: str):
+        try:
+            self.to_dataset().push_to_hub(path=path, token=token)
         except Exception as e:
             raise e

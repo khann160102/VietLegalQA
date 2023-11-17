@@ -1,7 +1,6 @@
 import json, pickle
 from typing import Any, List, Optional, Tuple, Union
 from datasets import load_dataset
-from torch import NoneType
 
 from .doc import Document
 from .qa import QADataset
@@ -15,9 +14,8 @@ def load_document_hf(
     select: Optional[Union[int, Tuple[int, int], Tuple[int, int, int]]] = None,
 ) -> Document:
     try:
-        return Document(data=load_dataset(path)[split].to_list(), field=field)
-        match range:
-            case NoneType():
+        match select:
+            case None:
                 return Document(data=load_dataset(path)[split].to_list(), field=field)
             case int():
                 return Document(
@@ -73,7 +71,7 @@ def load_qa_hf(
     select: Optional[Union[int, Tuple[int, int], Tuple[int, int, int]]] = None,
 ) -> QADataset:
     try:
-        match range:
+        match select:
             case None:
                 return QADataset(data=load_dataset(path)[split].to_list(), field=field)
             case int():

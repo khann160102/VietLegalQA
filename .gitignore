@@ -8,8 +8,10 @@ test
 law.json
 question.json
 data/tvpl_extract.json
+data/tvpl_contruct.json
 *.tsv
 *.rar
+*.pkl
 zalo
 
 ### Git ###
