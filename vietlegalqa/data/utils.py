@@ -23,7 +23,84 @@ QA_FIELD = list(
 )
 
 
-def get_extension(filename: str, type: Optional[str] = None):
+class Field:
+    @property
+    def id() -> str:
+        return FIELD[0]
+
+
+class DocField(Field):
+    @property
+    def title() -> str:
+        return FIELD[1]
+
+    @property
+    def summary() -> str:
+        return FIELD[2]
+
+    @property
+    def context() -> str:
+        return FIELD[3]
+
+
+class QAField(Field):
+    @property
+    def article() -> str:
+        return FIELD[1]
+
+    @property
+    def question() -> str:
+        return FIELD[2]
+
+    @property
+    def answer() -> str:
+        return FIELD[3]
+
+    @property
+    def start() -> str:
+        return FIELD[4]
+
+    @property
+    def type() -> str:
+        return FIELD[5]
+
+    @property
+    def is_impossible() -> str:
+        return FIELD[6]
+
+
+def get_extension(filename: str, type: Optional[str]) -> str:
+    """
+    Convert the filename into a formatted one with file extension if the filename does not contain the extension, otherwise return the unchanged filename.
+
+    Args:
+        filename (`str`):
+            The name of the file.
+        type (`str`, default to `None`):
+            The desired file extension. It can be either "json" or "pickle". If no `type` is provided, the function will return the filename as is.
+
+    Returns:
+        (`str`)
+            The filename with the specified extension. If the filename does not already have the specified extension, it will be added.
+
+    Examples:
+
+    Convert a filename that does not have an extension to the `json` type:
+
+    ```py
+    >>> filename = get_extension("abc", "json")
+    >>> filename
+    'abc.json'
+    ```
+
+    Convert a filename that already has an extension of `pickle` type:
+
+    ```py
+    >>> filename = get_extension("abc.pkl", "pickle")
+    >>> filename
+    'abc.pkl'
+    ```
+    """
     match type:
         case "json":
             return (
@@ -38,38 +115,66 @@ def get_extension(filename: str, type: Optional[str] = None):
                 else filename.strip()
             )
         case _:
-            filename.strip()
-
-
-class Field:
-    id = FIELD[0]
-
-
-class DocField(Field):
-    title = DOC_FIELD[1]
-    summary = DOC_FIELD[2]
-    context = DOC_FIELD[3]
-
-
-class QAField(Field):
-    article = QA_FIELD[1]
-    question = QA_FIELD[2]
-    answer = QA_FIELD[3]
-    start = QA_FIELD[4]
-    type = QA_FIELD[5]
-    is_impossible = QA_FIELD[6]
+            return filename.strip()
 
 
 class Entry:
+    """Abstract class, presenting an element of an instance of the class `Dataset`."""
+
     def __init__(
         self,
-        id: Optional[str] = None,
+        id: Optional[str],
     ) -> None:
-        self.id = id
+        """
+        Initializes an entry with an optional id parameter.
+
+        Args:
+            id (`str`, default to `None`):
+                The identifier for the entry.
+        """
+        self._id = id
+
+    @property
+    def id(self):
+        """Access to the ID of this entry."""
+        return self._id
+
+    @id.setter
+    def id(self, value):
+        """Set the ID of this entry."""
+        self._id = value
 
     def __call__(
         self, key: Optional[str] = None
     ) -> Union[str, Dict[str, Union[str, None]], None]:
+        """
+        Returns the value of a specific field if the key matches, otherwise returns a dictionary representation of the object.
+
+        Args:
+            key (`str`, default to `None`):
+                The `key` parameter is an optional string that represents the property needed to be accessed.
+
+        Returns:
+            `str` or `dict`
+
+        Examples:
+
+        Access the ID of the entry:
+
+        ```py
+        >>> entry = Entry(id='id_00')
+        >>> entry('id')
+        'id_00'
+        ```
+
+        Call the dictionary of the entry:
+
+        ```py
+        >>> entry = Entry(id='id_00')
+        >>> entry()
+        {'id':'id_00'}
+        ```
+        """
         try:
             match key:
                 case Field.id:
@@ -80,6 +185,26 @@ class Entry:
             raise e
 
     def __getitem__(self, key: str) -> Union[str, None]:
+        """
+        Returns the value of a specific field if the key matches, otherwise returns None.
+
+        Args:
+            key (`str`, default to `None`):
+                The `key` parameter is an optional string that represents the property needed to be accessed.
+
+        Returns:
+            `str` or `NoneType`
+
+        Examples:
+
+        Access the ID of the entry:
+
+        ```py
+        >>> entry = Entry(id='id_00')
+        >>> entry['id']
+        'id_00'
+        ```
+        """
         try:
             match key:
                 case Field.id:
@@ -102,6 +227,12 @@ class Entry:
             raise e
 
     def to_list(self) -> List[Union[str, None]]:
+        """
+        Converts all the properties of the entry to a list.
+
+        Returns:
+          The method `to_list` is returning a list containing the value of `self.id`.
+        """
         try:
             return list([self.id])
         except Exception as e:
